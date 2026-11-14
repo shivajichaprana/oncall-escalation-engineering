@@ -1,0 +1,21 @@
+rotations = {
+  primary = {
+    start       = "2026-01-05T09:00:00Z"
+    shift_hours = 168
+    shift_count = 8
+    responders  = ["engineer-a", "engineer-b", "engineer-c"]
+  }
+  backup = {
+    start       = "2026-01-05T09:00:00Z"
+    shift_hours = 168
+    shift_count = 8
+    responders  = ["engineer-d", "engineer-e"]
+  }
+}
+
+escalation_policies = {
+  "primary-oncall" = [
+    { after_minutes = 0, rotation = "primary" },
+    { after_minutes = 10, rotation = "backup" },
+  ]
+}

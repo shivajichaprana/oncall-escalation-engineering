@@ -55,6 +55,34 @@ it into Alertmanager.
 
 [Alertmanager configuration reference](https://prometheus.io/docs/alerting/latest/configuration/)
 
+## Escalation and schedules
+
+Render the example with the same local plan workflow. Copy the example before
+substituting team-specific responder IDs or coverage dates.
+
+```sh
+terraform plan -refresh=false -input=false \
+  -var-file=rotations/example.tfvars.example -out=oncall.tfplan
+terraform show -json oncall.tfplan \
+  | jq '.planned_values.outputs | {oncall_schedules, escalation_policies}'
+```
+
+Each rotation starts at a UTC timestamp and cycles through responder IDs in the
+listed order for a finite number of fixed-duration shifts. A shift includes
+its start and excludes its end. That assigns the handoff instant to the
+incoming responder. The example dates are synthetic. Set the anchor and shift
+count for the period you intend to cover. Fixed UTC shifts keep their elapsed
+duration across daylight saving changes, so local wall-clock handoff times
+can move.
+
+A policy belongs to an Alertmanager receiver. Start with a rotation at minute
+zero and add another at a later offset from the initial notification. A
+notification consumer should look up the responder at each scheduled
+escalation time, stop when the alert is acknowledged or resolved, and treat
+missing coverage as an operational error. Terraform exports the policy and
+handoff windows. The webhook consumer owns timers and acknowledgement state.
+Receivers without a policy continue to use the existing routing configuration.
+
 ## Licensing
 
 [MIT](LICENSE).
