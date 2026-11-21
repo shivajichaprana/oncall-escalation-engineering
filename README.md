@@ -83,6 +83,51 @@ missing coverage as an operational error. Terraform exports the policy and
 handoff windows. The webhook consumer owns timers and acknowledgement state.
 Receivers without a policy continue to use the existing routing configuration.
 
+## Review alert quality
+
+Use Python 3.10 or newer to score a local export of reviewed alert occurrences.
+
+```sh
+python3 -m quality.report quality/example.json
+```
+
+Input is a JSON array with one row per distinct occurrence after repeat firings
+have been grouped upstream. Each row contains exactly `id`, `rule`,
+`incident_confirmed`, and `action_required`. IDs must be unique across the export.
+Use `true`, `false`, or `null` for each judgement.
+
+- Precision is the share of reviewed occurrences confirmed to correspond to an
+  incident.
+- Actionability is the share of reviewed occurrences requiring a useful
+  responder intervention.
+- Each metric reports its own reviewed count, positive count, unknown count,
+  rate, and review coverage. A rate with no reviewed occurrences is `null`.
+
+The two judgements are independent. An incident can recover without intervention,
+while preventive action can be useful before an incident develops. Overall
+rates use occurrence counts across all rules. Preserve the observation window
+and selection method with the export when comparing reports. Selected reviews
+can bias the rates, and review coverage alone does not establish a representative
+sample. The tool measures the supplied judgements and cannot estimate recall
+without evidence about incidents that produced no alert.
+
+Reports print deterministic JSON to standard output. Invalid data or unreadable
+files produce an error on standard error and exit code 2. Successful reports
+return 0. The example uses synthetic records.
+
+To run the Python validation tools, install the pinned development requirements
+in a virtual environment.
+
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+python -m pytest
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy --strict quality
+```
+
 ## Licensing
 
 [MIT](LICENSE).

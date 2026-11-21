@@ -1,0 +1,6 @@
+[
+  {"id":"occurrence-a","rule":"queue-lag","incident_confirmed":true,"action_required":true},
+  {"id":"occurrence-b","rule":"queue-lag","incident_confirmed":false,"action_required":false},
+  {"id":"occurrence-c","rule":"queue-lag","incident_confirmed":null,"action_required":null},
+  {"id":"occurrence-d","rule":"replica-health","incident_confirmed":true,"action_required":false}
+]
