@@ -128,6 +128,44 @@ python -m ruff format --check .
 python -m mypy --strict quality
 ```
 
+## Capture a shift handoff
+
+Export the Terraform schedule context and combine it with an incident snapshot.
+Use an explicit handoff timestamp with a UTC offset.
+
+```sh
+terraform plan -refresh=false -input=false \
+  -var-file=rotations/example.tfvars.example -out=handoff.tfplan
+terraform show -json handoff.tfplan \
+  | jq '.planned_values.outputs.handoff_context.value' > schedules.json
+python3 -m handoff.report schedules.json handoff/example-incidents.json \
+  --at 2026-01-12T09:00:00Z
+```
+
+The synthetic example crosses a shift boundary. The outgoing responder is
+`engineer-a` and the current responder becomes `engineer-b`. Start timestamps
+are inclusive and end timestamps are exclusive. The report names an outgoing
+responder only when a shift ends exactly at the requested time. At other times,
+it reports the current responder and upcoming boundaries.
+
+A schedule context contains a `schedules` map whose values are lists of
+`responder`, `starts_at`, and `ends_at`. Supply an incident snapshot containing
+`captured_at` and `incidents`. Every incident has `id`, `summary`, `severity`,
+`status`, `owner`, and `next_action`. Supported statuses are `open`,
+`acknowledged`, and `resolved`. Set `owner` or `next_action` to `null` when
+unknown so the report can flag the missing information.
+
+The report carries unresolved incidents in severity order and counts resolved
+incidents separately. It exposes the snapshot capture time and age so the
+incoming responder can assess freshness. A snapshot taken after the requested
+handoff time is rejected. Coverage gaps appear as warnings with an unassigned
+current responder. Overlapping shifts and duplicate incident IDs are rejected.
+
+The CLI reads local JSON and prints JSON to standard output. It captures the
+supplied context without contacting incident systems or sending notifications.
+Keep real incident exports and generated reports in an access-controlled
+location, since summaries can contain operational information.
+
 ## Licensing
 
 [MIT](LICENSE).
