@@ -6,7 +6,10 @@ provider, backend configuration, or external credentials.
 
 ## Validate locally
 
-With Terraform 1.6 or newer, run these commands from the repository root.
+Use Terraform 1.6 or newer, Python 3.10 or newer, and Alertmanager's `amtool`
+on PATH. CI currently uses Terraform 1.13.5 and Alertmanager 0.30.1. Install
+the pinned Python development tools in a virtual environment, then run the
+commands from the repository root.
 
 ```sh
 terraform init -backend=false -input=false
@@ -16,7 +19,26 @@ terraform test
 ```
 
 The test suite uses plan-only runs. GitHub Actions runs the same validation
-commands and exposes the result through the `ci-complete` check.
+commands and exposes the result through the `ci-complete` check. A dedicated
+CI job requires the Alertmanager routing tests, while Python-only runs skip
+those cases when the routing tools are unavailable.
+
+Use the [routing model](docs/routing-model.md) to understand receiver selection
+and escalation windows. Follow the [on-call handbook](docs/oncall-handbook.md)
+for validation, quality review, and handoff procedures.
+
+The Make targets provide the complete local workflow.
+
+```sh
+make validate
+make simulate
+make deploy
+```
+
+`make deploy` stages a validated configuration at `build/alertmanager.yml`.
+Set `VAR_FILE` to a reviewed Terraform variable file and `OUTPUT` to choose the
+local artifact path. The [handbook](docs/oncall-handbook.md#review-a-routing-change)
+describes how the team reviews that artifact for its Alertmanager service.
 
 ## Severity routing
 
@@ -125,7 +147,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest
 python -m ruff check .
 python -m ruff format --check .
-python -m mypy --strict quality
+python -m mypy --strict quality handoff
 ```
 
 ## Capture a shift handoff
